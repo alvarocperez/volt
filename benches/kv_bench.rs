@@ -1,50 +1,19 @@
-use criterion::{criterion_group, criterion_main, Criterion};
-use tokio::runtime::Runtime;
-use volt::KVCluster; // Use the KVCluster from the lib.rs
+use criterion::{criterion_group, criterion_main};
 
-fn bench_operations(c: &mut Criterion) {
-    let rt = Runtime::new().unwrap();
-    let mut group = c.benchmark_group("KVStore");
-    
-    group.bench_function("setup", |b| {
-        b.iter(|| {
-            let mut cluster = KVCluster::new(100, 2);
-            rt.block_on(async {
-                cluster.add_node("node1".to_string());
-                cluster.add_node("node2".to_string());
-            });
-            cluster
-        })
-    });
-
-    let mut cluster = KVCluster::new(100, 2);
-    rt.block_on(async {
-        cluster.add_node("node1".to_string());
-        cluster.add_node("node2".to_string());
-    });
-
-    group.bench_function("set", |b| {
-        b.iter(|| {
-            rt.block_on(async {
-                cluster.set("key".to_string(), b"value".to_vec(), None).await
-            })
-        })
-    });
-
-    group.bench_function("get", |b| {
-        b.iter(|| cluster.get("key"))
-    });
-
-    group.bench_function("del", |b| {
-        b.iter(|| {
-            rt.block_on(async {
-                cluster.del("key").await
-            })
-        })
-    });
-
-    group.finish();
+mod scenarios {
+    pub mod data_size;
+    pub mod concurrent_ops;
+    pub mod bulk_ops;
 }
 
-criterion_group!(benches, bench_operations);
+use scenarios::data_size::bench_data_size;
+use scenarios::concurrent_ops::bench_concurrent_ops;
+use scenarios::bulk_ops::bench_bulk_ops;
+
+criterion_group!(
+    benches,
+    bench_data_size,
+    bench_concurrent_ops,
+    bench_bulk_ops
+);
 criterion_main!(benches);
