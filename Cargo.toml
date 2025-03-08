@@ -1,0 +1,17 @@
+[package]
+name = "volt"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dashmap = "5.5"                     
+xxhash-rust = { version = "0.8", features = ["xxh32"] }
+tokio = { version = "1.0", features = ["full"] } 
+priority-queue = "1.3"             
+
+[dev-dependencies]
+criterion = "0.5"         
+
+[[bench]]
+name = "kv_bench"
+harness = false
