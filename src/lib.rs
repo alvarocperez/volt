@@ -5,6 +5,8 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 use xxhash_rust::xxh32::xxh32;
+use serde::{Serialize, Deserialize};
+use serde_json::{Value as JsonValue, Error as JsonError};
 
 #[derive(Clone)]
 struct KVEntry {
@@ -141,6 +143,44 @@ impl KVCluster {
         primary.ttl_queue.lock().unwrap().remove(key);
         for replica in &nodes[1..] {
             let _ = replica.tx.send(KVOperation::Del(key.to_string())).await;
+        }
+    }
+
+    // Nuevos métodos para manejar documentos JSON
+
+    /// Almacena un documento JSON serializado
+    pub async fn set_json<T: Serialize>(&self, key: String, value: &T, ttl: Option<Duration>) -> Result<(), JsonError> {
+        let json_bytes = serde_json::to_vec(value)?;
+        self.set(key, json_bytes, ttl).await;
+        Ok(())
+    }
+
+    /// Recupera un documento JSON y lo deserializa al tipo especificado
+    pub fn get_json<T: for<'de> Deserialize<'de>>(&self, key: &str) -> Result<Option<T>, JsonError> {
+        match self.get(key) {
+            Some(bytes) => {
+                let value = serde_json::from_slice(&bytes)?;
+                Ok(Some(value))
+            }
+            None => Ok(None),
+        }
+    }
+
+    /// Almacena un documento JSON genérico (serde_json::Value)
+    pub async fn set_json_value(&self, key: String, value: &JsonValue, ttl: Option<Duration>) -> Result<(), JsonError> {
+        let json_bytes = serde_json::to_vec(value)?;
+        self.set(key, json_bytes, ttl).await;
+        Ok(())
+    }
+
+    /// Recupera un documento JSON como un valor genérico (serde_json::Value)
+    pub fn get_json_value(&self, key: &str) -> Result<Option<JsonValue>, JsonError> {
+        match self.get(key) {
+            Some(bytes) => {
+                let value = serde_json::from_slice(&bytes)?;
+                Ok(Some(value))
+            }
+            None => Ok(None),
         }
     }
 }
