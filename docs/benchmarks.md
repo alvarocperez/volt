@@ -1,4 +1,4 @@
-# Volt Benchmarks
+# 📊 Volt Benchmarks
 
 This document provides an overview of the performance benchmarks for the Volt key-value store.
 
