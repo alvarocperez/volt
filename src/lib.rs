@@ -8,6 +8,10 @@ use xxhash_rust::xxh32::xxh32;
 use serde::{Serialize, Deserialize};
 use serde_json::{Value as JsonValue, Error as JsonError};
 
+// Expose our API and server modules
+pub mod api;
+pub mod server;
+
 #[derive(Clone)]
 struct KVEntry {
     value: Vec<u8>,
@@ -146,16 +150,16 @@ impl KVCluster {
         }
     }
 
-    // Nuevos métodos para manejar documentos JSON
+    // New methods for handling JSON documents
 
-    /// Almacena un documento JSON serializado
+    /// Stores a serialized JSON document
     pub async fn set_json<T: Serialize>(&self, key: String, value: &T, ttl: Option<Duration>) -> Result<(), JsonError> {
         let json_bytes = serde_json::to_vec(value)?;
         self.set(key, json_bytes, ttl).await;
         Ok(())
     }
 
-    /// Recupera un documento JSON y lo deserializa al tipo especificado
+    /// Retrieves a JSON document and deserializes it to the specified type
     pub fn get_json<T: for<'de> Deserialize<'de>>(&self, key: &str) -> Result<Option<T>, JsonError> {
         match self.get(key) {
             Some(bytes) => {
@@ -166,14 +170,14 @@ impl KVCluster {
         }
     }
 
-    /// Almacena un documento JSON genérico (serde_json::Value)
+    /// Stores a generic JSON document (serde_json::Value)
     pub async fn set_json_value(&self, key: String, value: &JsonValue, ttl: Option<Duration>) -> Result<(), JsonError> {
         let json_bytes = serde_json::to_vec(value)?;
         self.set(key, json_bytes, ttl).await;
         Ok(())
     }
 
-    /// Recupera un documento JSON como un valor genérico (serde_json::Value)
+    /// Retrieves a JSON document as a generic value (serde_json::Value)
     pub fn get_json_value(&self, key: &str) -> Result<Option<JsonValue>, JsonError> {
         match self.get(key) {
             Some(bytes) => {
