@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  volt:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - VOLT_HOST=0.0.0.0
+      - VOLT_PORT=3000
+      - VOLT_NODE_COUNT=3
+    restart: unless-stopped 
