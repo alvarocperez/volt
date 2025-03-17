@@ -19,6 +19,8 @@ Volt is an experimental high-performance in-memory key-value store written in Ru
   - JSON document storage and retrieval (both typed and generic)
   - Asynchronous operations using Tokio
   - Basic TTL support with priority queue-based expiration
+  - HTTP API for language-agnostic access
+  - Python client library
 
 - **Performance Characteristics**:
   - Lock-free concurrent access using `DashMap`
@@ -50,6 +52,23 @@ For detailed benchmark information, see:
 
 ## 🔧 Quick Start
 
+### Using Docker
+
+The easiest way to get started with Volt is using Docker:
+
+```bash
+# Clone the repository
+git clone https://github.com/alvarocperez/volt.git
+cd volt
+
+# Build and start the Docker container
+docker-compose up -d
+
+# The Volt server will be available at http://localhost:3000
+```
+
+### Building from Source
+
 ```bash
 # Clone the repository
 git clone https://github.com/alvarocperez/volt.git
@@ -58,11 +77,16 @@ cd volt
 # Build in release mode
 cargo build --release
 
+# Run the server
+cargo run --release --bin server
+
 # Run the benchmarks
 cargo bench
 ```
 
 ## 📘 Usage Example
+
+### Using the Rust API
 
 ```rust
 use volt::KVCluster;
@@ -103,27 +127,66 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("User: {} ({})", retrieved_user.name, retrieved_user.email);
     }
     
-    // Generic JSON operations
-    use serde_json::json;
-    
-    let document = json!({
-        "id": "doc-123",
-        "title": "Sample Document",
-        "tags": ["sample", "example", "json"]
-    });
-    
-    cluster.set_json_value("doc:123".to_string(), &document, None).await?;
-    
-    if let Some(doc) = cluster.get_json_value("doc:123")? {
-        println!("Document: {} (tags: {:?})", 
-            doc["title"].as_str().unwrap_or(""),
-            doc["tags"].as_array().map(|a| a.len()).unwrap_or(0)
-        );
-    }
-    
     Ok(())
 }
 ```
+
+### Using the Python Client
+
+```python
+from volt_client import VoltClient
+
+# Connect to a Volt server
+client = VoltClient(host="localhost", port=3000)
+
+# Basic string operations
+client.set("hello", "world")
+print(client.get("hello"))  # Outputs: world
+
+# JSON operations
+user = {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "active": True
+}
+
+client.set_json("user:1", user)
+retrieved_user = client.get_json("user:1")
+print(f"User: {retrieved_user['name']} ({retrieved_user['email']})")
+```
+
+### Using the HTTP API Directly
+
+```bash
+# Set a value
+curl -X POST -H "Content-Type: application/json" -d '{"value":"world"}' http://localhost:3000/kv/hello
+
+# Get a value
+curl http://localhost:3000/kv/hello
+
+# Set a JSON value
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"value":{"name":"John","email":"john@example.com"}}' \
+  http://localhost:3000/json/user:1
+
+# Get a JSON value
+curl http://localhost:3000/json/user:1
+
+# Delete a value
+curl -X DELETE http://localhost:3000/kv/hello
+```
+
+## 🐍 Python Client
+
+A Python client is available in the `python/` directory. To install:
+
+```bash
+cd python
+pip install .
+```
+
+For more details, see the [Python client README](python/README.md).
 
 ## 🛣️ Development Roadmap
 
@@ -132,6 +195,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 - [x] Initial concurrent access support
 - [x] Basic TTL implementation
 - [x] JSON document support
+- [x] HTTP API
+- [x] Python client
 - [ ] Comprehensive benchmark suite
 - [ ] Memory usage optimization
 - [ ] Lock-free data structures optimization
@@ -152,10 +217,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 - [ ] JSON path queries and indexing
 
 ### Phase 4: Production Readiness
+- [x] REST API
+- [x] Docker support
 - [ ] Persistence layer
-- [ ] REST/gRPC API
-- [ ] Containerization
-- [ ] Documentation and examples
+- [ ] gRPC API
 - [ ] Production monitoring tools
 
 ## 🛠️ Development
@@ -163,6 +228,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### Prerequisites
 - Rust 1.70 or higher
 - Cargo
+- Docker (optional)
 
 ### Running Tests
 ```bash
